@@ -26,11 +26,6 @@
     "turbo": "catalog:",
     "typescript": "catalog:"
   },
-  "nano-staged": {
-    "*.{js,ts,vue,json,md,yml,yaml,css}": [
-      "pnpm check"
-    ]
-  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
