@@ -1,0 +1,13 @@
+node_modules
+.nuxt
+.output
+.turbo
+.vite
+dist
+coverage
+*.tsbuildinfo
+.env*
+!.env.example
+
+# Generated. NEVER committed
+packages/registry/dist

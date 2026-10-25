@@ -1,0 +1,48 @@
+{
+  "name": "sulaf-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "check": "pnpm lint && pnpm fmt:check",
+    "fix": "pnpm lint:fix && pnpm fmt",
+    "postinstall": "pnpm dlx husky install",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "catalog:",
+    "@changesets/cli": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "husky": "catalog:",
+    "nano-staged": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "tsx": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:"
+  },
+  "nano-staged": {
+    "*.{js,ts,vue,json,md,yml,yaml,css}": [
+      "pnpm check"
+    ]
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^12.14.0"
+    }
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

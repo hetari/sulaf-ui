@@ -1,0 +1,24 @@
+packages:
+  - apps/*
+  - packages/*
+# e2e/fixtures are deliberately NOT here: they install like a real user project
+
+allowBuilds:
+  esbuild: true
+catalog:
+  "@changesets/changelog-github": ^1.0.1
+  "@changesets/cli": ^3.0.3
+  "@commitlint/cli": ^21.2.3
+  "@commitlint/config-conventional": ^21.2.3
+  husky: ^9.1.7
+  nano-staged: ^1.0.2
+  oxfmt: ^0.73.0
+  oxlint: ^1.88.0
+  oxlint-tsgolint: ^7.0.2004
+  tsx: ^4.23.15
+  turbo: ^2.11.8
+  typescript: ^7.0.2
+catalogMode: prefer # try the catalog first; check-catalog (Phase 12) is the hard gate
+cleanupUnusedCatalogs: true # pnpm prunes catalog lines nobody uses
+
+overrides: {} # force a single version if a transitive dep ever duplicates Vue
