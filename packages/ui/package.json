@@ -1,0 +1,42 @@
+{
+  "name": "@sulaf/ui",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "ui:add": "tsx scripts/ui-add.ts",
+    "ui:sync": "tsx scripts/ui-sync.ts",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@lucide/vue": "catalog:",
+    "@vee-validate/zod": "catalog:",
+    "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "cn": "catalog:",
+    "embla-carousel-vue": "catalog:",
+    "reka-ui": "catalog:",
+    "shiki": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tailwindcss": "catalog:",
+    "vee-validate": "catalog:",
+    "vue": "catalog:",
+    "vue-input-otp": "catalog:",
+    "vue-sonner": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
+    "execa": "catalog:",
+    "shadcn-vue": "catalog:",
+    "tinyglobby": "catalog:",
+    "tsx": "catalog:",
+    "tw-animate-css": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

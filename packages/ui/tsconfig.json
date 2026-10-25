@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "": ["./*"],
+    "types": ["vite/client"],
+    "paths": { "@sulaf/ui/*": ["./src/*"] }
+  },
+  "include": ["src/**/*", "scripts/**/*", "*.ts"]
+}
