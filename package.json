@@ -35,9 +35,5 @@
   "engines": {
     "node": ">=22.13"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  }
+  "packageManager": "pnpm@12.14.0"
 }

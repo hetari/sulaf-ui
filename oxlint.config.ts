@@ -54,7 +54,12 @@ export default defineConfig({
     "import/no-mutable-exports": "error",
 
     // https://oxc.rs/docs/guide/usage/linter/rules.html?sort=name&dir=asc
-    "sort-imports": "error",
+    "sort-imports": [
+      "error",
+      {
+        ignoreDeclarationSort: true,
+      },
+    ],
     "no-restricted-imports": [
       "error",
       {
