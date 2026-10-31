@@ -18,6 +18,7 @@ export default defineConfig({
     "object-shorthand": ["error", "always"],
     "no-implicit-coercion": "warn",
     "no-throw-literal": "error",
+    "no-underscore-dangle": ["warn", { allow: ["_data"] }],
     "typescript/require-await": "error",
 
     // --- TypeScript ---
@@ -67,6 +68,10 @@ export default defineConfig({
           {
             group: ["~/components/ui/*", "@/components/ui/*"],
             message: "Import primitives from @sulaf/ui/components/ui/*",
+          },
+          {
+            group: ["@/*"],
+            message: "In apps/docs use ~/. The @ alias is not used.",
           },
         ],
       },

@@ -6,8 +6,19 @@ import { execa } from "execa";
 const root = resolve(import.meta.dirname, "..");
 const names = readFileSync(resolve(root, "UPSTREAM.txt"), "utf8").split("\n").filter(Boolean);
 if (!names.length) process.exit(0);
+const nodeOptions = [
+  process.env.NODE_OPTIONS,
+  "--network-family-autoselection-attempt-timeout=5000",
+]
+  .filter(Boolean)
+  .join(" ");
+
 await execa("shadcn-vue", ["add", ...names, "--yes", "--overwrite"], {
   cwd: root,
   preferLocal: true,
   stdio: "inherit",
+  env: {
+    ...process.env,
+    NODE_OPTIONS: nodeOptions,
+  },
 });

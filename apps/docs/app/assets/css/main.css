@@ -1,0 +1,209 @@
+@import "../../../../../packages/ui/src/styles/globals.css";
+
+@custom-variant fixed (&:is(.layout-fixed *));
+
+@theme inline {
+  --breakpoint-3xl: 1600px;
+  --breakpoint-4xl: 2000px;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-code: var(--code);
+  --color-code-foreground: var(--code-foreground);
+  --color-code-highlight: var(--code-highlight);
+  --color-code-number: var(--code-number);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
+
+  --font-sans: "Inter", sans-serif;
+  --font-heading: "Inter", sans-serif;
+}
+
+:root {
+  --font-sans: "Inter", sans-serif;
+  --tw-border-style: solid;
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: oklch(0.145 0 0);
+  --selection-foreground: oklch(1 0 0);
+}
+
+.dark {
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --surface: oklch(0.2 0 0);
+  --surface-foreground: oklch(0.708 0 0);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.27 0 0);
+  --code-number: oklch(0.72 0 0);
+  --selection: oklch(0.922 0 0);
+  --selection-foreground: oklch(0.205 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground selection:bg-selection selection:text-selection-foreground;
+  }
+
+  [data-slot="layout"] {
+    @apply 3xl:px-2 3xl:fixed:p-0 overscroll-none;
+  }
+}
+
+/*
+  The container-wrapper utility caps the maximum width of the application content.
+  On 3xl screens with a fixed layout, it aligns with breakpoint-2xl + 2rem for consistent padding.
+*/
+@utility container-wrapper {
+  @apply 3xl:fixed:max-w-[calc(var(--breakpoint-2xl)+2rem)] mx-auto w-full px-2;
+}
+
+/*
+  The container utility sets a maximum width for the content and centers it horizontally.
+  It also applies horizontal padding that adjusts for larger screens, ensuring the content remains visually balanced and readable across different screen sizes.
+*/
+@utility container {
+  @apply 3xl:max-w-screen-2xl mx-auto max-w-350 px-4 lg:px-8;
+}
+
+/*
+  The border-grid utility applies a semi-transparent border color to elements, with a different color in dark mode.
+  It uses the border color with 50% opacity for light mode and the full border color for dark mode, ensuring visibility and contrast across themes.
+*/
+@utility border-grid {
+  border-color: color-mix(in oklab, var(--border) 50%, transparent);
+
+  @variant dark {
+    border-color: var(--border);
+  }
+}
+
+/*
+ The extend-touch-target utility enhances the touch target area for interactive elements on devices with coarse pointers (e.g., touchscreens).
+ It applies relative positioning and touch manipulation to the element, and uses an after pseudo-element to create an extended hit area of 2 units around the element, improving usability on touch devices.
+*/
+@utility extend-touch-target {
+  @media (pointer: coarse) {
+    @apply relative touch-manipulation after:absolute after:-inset-2;
+  }
+}
+
+/*
+  The no-scrollbar utility hides the scrollbar for an element across different browsers.
+  It sets the overflow style to none for Internet Explorer and Edge, and hides the scrollbar for WebKit-based browsers (e.g., Chrome, Safari) while also setting the scrollbar width to none for Firefox, ensuring a consistent scrollbar-free experience across all major browsers.
+*/
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+  The border-ghost utility creates a ghost border effect by applying a border color that blends with the background.
+  It uses the border color for the after pseudo-element, which is positioned absolutely to cover the entire element, and applies a mix-blend mode to darken the border in light mode and lighten it in dark mode, creating a subtle and visually appealing border effect that adapts to the theme.
+*/
+@utility border-ghost {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border);
+    mix-blend-mode: darken;
+
+    @variant dark {
+      mix-blend-mode: lighten;
+    }
+  }
+}
+
+/*
+  The step utility is designed to create a numbered step indicator, often used in tutorials or multi-step processes.
+  It increments a counter named "step" for each element that uses this utility, and uses the before pseudo-element to display the current step number inside a styled circle. The circle is positioned absolutely to the left of the element, with specific styling for background, border, size, and typography to ensure it stands out as a clear indicator of the step number.
+*/
+@layer components {
+  .steps {
+    &:first-child {
+      @apply mt-0!;
+    }
+
+    > h3:first-child {
+      @apply mt-6!;
+    }
+
+    > h3 {
+      @apply mt-12!;
+    }
+
+    > h3 + p {
+      @apply mt-2!;
+    }
+  }
+}
+
+/*
+  The step utility is designed to create a numbered step indicator, often used in tutorials or multi-step processes.
+  It increments a counter named "step" for each element that uses this utility, and uses the before pseudo-element to display the current step number inside a styled circle. The circle is positioned absolutely to the left of the element, with specific styling for background, border, size, and typography to ensure it stands out as a clear indicator of the step number.
+*/
+@utility step {
+  counter-increment: step;
+
+  &:before {
+    @apply bg-background border-border ring-background absolute inline-flex size-7 items-center justify-center rounded-full border text-center -indent-px font-mono text-sm font-medium ring-8;
+    @apply -ml-11.5;
+    content: counter(step);
+  }
+}
+
+/* Tailwind v4 does not scan symlinked workspace packages. Paths are relative to THIS file. */
+@source "../../../../../packages/ui/src";

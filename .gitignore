@@ -11,3 +11,5 @@ coverage
 
 # Generated. NEVER committed
 packages/registry/dist
+.data
+.nitro

@@ -1,0 +1,48 @@
+{
+  "name": "@sulaf/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@lucide/vue": "catalog:",
+    "@nuxt/content": "catalog:",
+    "@nuxt/fonts": "catalog:",
+    "@nuxt/image": "catalog:",
+    "@nuxtjs/color-mode": "catalog:",
+    "@resvg/resvg-js": "catalog:",
+    "@sulaf/ui": "workspace:*",
+    "@tailwindcss/vite": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@vueuse/nuxt": "catalog:",
+    "better-sqlite3": "catalog:",
+    "cn": "catalog:",
+    "gsap": "catalog:",
+    "nuxt": "catalog:",
+    "nuxt-og-image": "catalog:",
+    "nuxt-shiki": "catalog:",
+    "reka-ui": "catalog:",
+    "satori": "catalog:",
+    "shadcn-nuxt": "catalog:",
+    "shiki": "catalog:",
+    "tailwindcss": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:",
+    "vue-sonner": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@nuxt/a11y": "catalog:",
+    "@nuxt/hints": "catalog:",
+    "@tailwindcss/typography": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

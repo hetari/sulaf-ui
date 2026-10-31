@@ -4,12 +4,14 @@ packages:
 # e2e/fixtures are deliberately NOT here: they install like a real user project
 
 allowBuilds:
+  better-sqlite3: true
   esbuild: true
 catalog:
   "@changesets/changelog-github": ^1.0.1
   "@changesets/cli": ^3.0.3
   "@commitlint/cli": ^21.2.3
   "@commitlint/config-conventional": ^21.2.3
+  "@types/node": ^26.6.5
   "@lucide/vue": ^1.61.0
   "@vee-validate/zod": ^4.15.1
   "@vitejs/plugin-vue": ^6.0.10
@@ -41,7 +43,28 @@ catalog:
   vue-sonner: ^2.0.9
   vue-tsc: ^3.3.13
   zod: 3.25.76
+  "@nuxt/a11y": 1.0.0-alpha.1
+  "@nuxt/content": ^3.16.2
+  "@nuxt/fonts": 0.14.0
+  "@nuxt/hints": 1.0.0-alpha.6
+  "@nuxt/image": 2.1.0
+  "@nuxtjs/color-mode": 4.0.0
+  "@resvg/resvg-js": ^2.6.2
+  "@tailwindcss/typography": ^0.5.20
+  "@tailwindcss/vite": ^4.3.3
+  "@vueuse/nuxt": ^15.0.0
+  better-sqlite3: ^12.11.1
+  gsap: ^3.15.0
+  nuxt: ^4.6.3
+  nuxt-og-image: ^6.10.4
+  nuxt-shiki: 0.3.2
+  satori: ^0.48.1
+  vue-router: ^5.4.0
+  shadcn-nuxt: ^2.9.0
 catalogMode: prefer # try the catalog first; check-catalog (Phase 12) is the hard gate
 cleanupUnusedCatalogs: true # pnpm prunes catalog lines nobody uses
 
 overrides: {} # force a single version if a transitive dep ever duplicates Vue
+
+onlyBuiltDependencies:
+  - better-sqlite3

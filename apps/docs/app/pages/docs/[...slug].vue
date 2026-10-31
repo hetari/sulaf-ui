@@ -1,0 +1,173 @@
+<script lang="ts" setup>
+import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Clock } from "@lucide/vue";
+
+import { toDocNeighbour, toDocPageView } from "~/lib/docs";
+
+const route = useRoute();
+
+const { data: page } = await useAsyncData(route.path, async () => {
+  const item = await queryCollection("content").path(route.path).first();
+  return item ? toDocPageView(item) : null;
+});
+
+if (!page.value) {
+  throw createError({ statusCode: 404, statusMessage: "Page not found" });
+}
+
+const { data: neighbours } = await useAsyncData(`surround-${route.path}`, async () => {
+  const items = await queryCollectionItemSurroundings("content", route.path);
+  return items.map((item) => (item ? toDocNeighbour(item) : null));
+});
+
+useSeoMeta({
+  title: page.value.title,
+  description: page.value.description,
+  ogTitle: page.value.title,
+  ogDescription: page.value.description,
+});
+
+defineOgImage("Custom", {
+  title: page.value.title,
+  description: page.value.description,
+});
+</script>
+
+<template>
+  <div v-if="page" class="h-full">
+    <div data-slot="docs" class="flex h-full items-stretch text-[1.05rem] sm:text-[15px] xl:w-full">
+      <div class="flex h-auto min-w-0 flex-1 flex-col">
+        <div class="h-(--top-spacing) shrink-0" />
+        <div
+          class="mx-auto flex w-full max-w-2xl min-w-0 flex-1 flex-col gap-8 px-4 py-6 text-foreground md:px-0 lg:py-8"
+        >
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-2">
+              <div class="flex items-start justify-between">
+                <h1
+                  class="flex scroll-m-20 items-center gap-3 text-4xl font-semibold tracking-tight sm:text-3xl xl:text-4xl"
+                >
+                  <LucideIcon
+                    v-if="page.icon"
+                    :name="page.icon"
+                    class="size-8 shrink-0 text-muted-foreground sm:size-7 xl:size-8"
+                  />
+                  {{ page.title }}
+                </h1>
+
+                <div
+                  class="fixed inset-x-0 bottom-0 isolate z-50 flex items-center gap-2 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm sm:static sm:z-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pt-1.5 sm:backdrop-blur-none"
+                >
+                  <DocsCopyPage :rawbody="page.rawbody" />
+                  <!-- Copy page -->
+                  <Button
+                    v-if="neighbours?.[0]"
+                    variant="secondary"
+                    size="icon"
+                    class="extend-touch-target ms-auto size-8 shadow-none md:size-7"
+                    as-child
+                  >
+                    <NuxtLink :to="neighbours[0].path" prefetch-on="interaction">
+                      <ArrowLeft />
+                      <span class="sr-only">Previous</span>
+                    </NuxtLink>
+                  </Button>
+                  <Button
+                    v-if="neighbours?.[1]"
+                    variant="secondary"
+                    size="icon"
+                    class="extend-touch-target size-8 shadow-none md:size-7"
+                    as-child
+                  >
+                    <NuxtLink :to="neighbours[1].path" prefetch-on="interaction">
+                      <span class="sr-only">Next</span>
+                      <ArrowRight />
+                    </NuxtLink>
+                  </Button>
+                </div>
+              </div>
+              <p
+                v-if="page.description"
+                class="text-[1.05rem] text-balance text-muted-foreground sm:text-base"
+              >
+                {{ page.description }}
+              </p>
+            </div>
+            <div v-if="page.links" class="flex items-center space-x-2 pt-4">
+              <Badge v-if="page.links.doc" as-child variant="secondary">
+                <NuxtLink
+                  :to="page.links.doc"
+                  target="_blank"
+                  rel="noreferrer"
+                  prefetch-on="interaction"
+                >
+                  Docs <ArrowUpRight />
+                </NuxtLink>
+              </Badge>
+              <Badge v-if="page.links.api" as-child variant="secondary">
+                <NuxtLink
+                  :to="page.links.api"
+                  target="_blank"
+                  rel="noreferrer"
+                  prefetch-on="interaction"
+                >
+                  API Reference <ArrowUpRight />
+                </NuxtLink>
+              </Badge>
+            </div>
+          </div>
+
+          <ContentRenderer
+            :value="page.source"
+            class="w-full flex-1 *:data-[slot=alert]:first:mt-0"
+          />
+
+          <p
+            v-if="page.lastUpdated"
+            class="flex items-center gap-1.5 text-sm text-muted-foreground"
+          >
+            <Clock class="size-3.5" />
+            Last updated on
+            {{
+              new Date(page.lastUpdated).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                timeZone: "UTC",
+              })
+            }}
+          </p>
+        </div>
+        <div class="mx-auto flex h-16 w-full max-w-2xl items-center gap-2 px-4 md:px-0">
+          <Button v-if="neighbours?.[0]" variant="secondary" size="sm" as-child class="shadow-none">
+            <NuxtLink prefetch-on="interaction" :to="neighbours[0].path">
+              <ChevronLeft /> {{ neighbours[0].title }}
+            </NuxtLink>
+          </Button>
+          <Button
+            v-if="neighbours?.[1]"
+            variant="secondary"
+            size="sm"
+            class="ms-auto shadow-none"
+            as-child
+          >
+            <NuxtLink :to="neighbours[1].path" prefetch-on="interaction">
+              {{ neighbours[1].title }} <ChevronRight />
+            </NuxtLink>
+          </Button>
+        </div>
+      </div>
+      <div
+        class="sticky top-[calc(var(--header-height)+1px)] z-30 ms-auto hidden h-[calc(100svh-var(--header-height)-var(--footer-height))] w-72 flex-col gap-4 overflow-hidden overscroll-none pb-8 xl:flex"
+      >
+        <div class="h-(--top-spacing) shrink-0" />
+        <div v-if="page.toc?.links.length" class="no-scrollbar overflow-y-auto px-8">
+          <DocsTableOfContents :toc="page.toc" />
+          <div class="h-12" />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div v-else class="flex h-screen items-center justify-center">
+    <p class="text-muted-foreground">Loading...</p>
+  </div>
+</template>

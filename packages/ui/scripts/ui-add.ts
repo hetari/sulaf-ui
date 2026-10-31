@@ -11,10 +11,21 @@ if (!names.length) {
   process.exit(1);
 }
 
+const nodeOptions = [
+  process.env.NODE_OPTIONS,
+  "--network-family-autoselection-attempt-timeout=5000",
+]
+  .filter(Boolean)
+  .join(" ");
+
 await execa("shadcn-vue", ["add", ...names, "--yes", "--overwrite"], {
   cwd: root,
   preferLocal: true,
   stdio: "inherit",
+  env: {
+    ...process.env,
+    NODE_OPTIONS: nodeOptions,
+  },
 });
 
 const current = existsSync(listFile)
