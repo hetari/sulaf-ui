@@ -1,0 +1,20 @@
+{
+  "name": "@sulaf/transforms",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pathe": "catalog:",
+    "shadcn-vue": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "^5.1.0"
+  }
+}
