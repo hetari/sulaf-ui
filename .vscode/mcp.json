@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "shadcnVue": {
+      "command": "npx",
+      "args": ["shadcn-vue@2.8.2", "mcp"],
+      "cwd": "${workspaceFolder}/packages/ui"
+    }
+  }
+}

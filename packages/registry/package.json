@@ -1,0 +1,25 @@
+{
+  "name": "@sulaf/registry",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsx scripts/stage.ts",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@sulaf/ui": "workspace:*",
+    "reka-ui": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@sulaf/transforms": "workspace:*",
+    "@vitejs/plugin-vue": "catalog:",
+    "execa": "catalog:",
+    "pathe": "catalog:",
+    "shadcn-vue": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

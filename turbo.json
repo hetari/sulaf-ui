@@ -15,9 +15,6 @@
     "check": {
       "dependsOn": ["^build"]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
+    "dev": { "dependsOn": ["@sulaf/registry#build"], "cache": false, "persistent": true }
   }
 }
