@@ -1,6 +1,7 @@
 import { dirname, join } from "pathe";
 import { RegistryValidationError } from "shadcn-vue/registry";
 import { type RegistryItem, rawConfigSchema } from "shadcn-vue/schema";
+import ts from "typescript";
 
 export type RegistryItemType = RegistryItem["type"];
 export type ItemKind = "ui" | "blocks" | "hooks" | "lib";
@@ -41,8 +42,8 @@ export interface RewriteResult {
   packages: NonNullable<RegistryItem["dependencies"]>;
 }
 
-// Matches:  from 'x'   import('x')   import 'x'
-const SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\2/g;
+// Matches the opening tag of a <script> block in a Vue SFC.
+const VUE_SCRIPT_OPEN = /<script\b[^>]*>/;
 // repo-relative path of a file inside an item folder: src/<kind>/<name>/...
 const ITEM_PATH = /^src\/(ui|blocks|hooks|lib)\/([^/]+)(?:\/|$)/;
 const PRIMITIVE_PREFIX = "@sulaf/ui/components/ui/";
@@ -100,7 +101,12 @@ export function rewriteImports(
       const [, kind, name] = hit as [string, ItemKind, string];
       if (kind === own[1] && name === own[2]) return spec; // inside the same item: unchanged
       siblings.set(`${kind}/${name}`, { kind, name }); // another Sulaf item
-      return `${KIND_ALIAS[kind]}/${name}`;
+      // Preserve any subpath that comes after the item-name segment (e.g. /Bar.vue).
+      const resolved = join(dirname(file), spec);
+      const subpath = resolved.slice(
+        resolved.indexOf(`/${kind}/${name}`) + `/${kind}/${name}`.length,
+      );
+      return `${KIND_ALIAS[kind]}/${name}${subpath}`;
     }
 
     // 4. app aliases are never allowed in item source
@@ -113,10 +119,74 @@ export function rewriteImports(
     return spec;
   };
 
-  const code_out = code.replace(SPECIFIER, (match, lead: string, quote: string, spec: string) => {
-    const next = map(spec);
-    return next === spec ? match : `${lead}${quote}${next}${quote}`;
-  });
+  /**
+   * Collect module-specifier string literal nodes from TypeScript/Vue source
+   * via the TypeScript AST, so comments and ordinary string literals are
+   * never mistaken for import specifiers.
+   *
+   * Returns nodes sorted in document order.
+   */
+  const collectSpecifierNodes = (
+    src: string,
+    scriptOffset: number,
+  ): { start: number; end: number; text: string }[] => {
+    const sfcKind = file.endsWith(".vue") ? ts.ScriptKind.TS : ts.ScriptKind.Unknown;
+    const sf = ts.createSourceFile("_", src, ts.ScriptTarget.ESNext, true, sfcKind);
+    const nodes: { start: number; end: number; text: string }[] = [];
+
+    const visit = (node: ts.Node): void => {
+      if (
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier &&
+        ts.isStringLiteralLike(node.moduleSpecifier)
+      ) {
+        nodes.push({
+          start: node.moduleSpecifier.getStart(sf) + scriptOffset,
+          end: node.moduleSpecifier.getEnd() + scriptOffset,
+          text: node.moduleSpecifier.text,
+        });
+      } else if (
+        ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+        node.arguments.length === 1 &&
+        ts.isStringLiteralLike(node.arguments[0]!)
+      ) {
+        const arg = node.arguments[0]!;
+        nodes.push({
+          start: arg.getStart(sf) + scriptOffset,
+          end: arg.getEnd() + scriptOffset,
+          text: arg.text,
+        });
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+    return nodes;
+  };
+
+  // For Vue SFCs, only the <script> block contains module specifiers.
+  let scriptSrc = code;
+  let scriptOffset = 0;
+  if (file.endsWith(".vue")) {
+    const openMatch = VUE_SCRIPT_OPEN.exec(code);
+    if (openMatch) {
+      scriptOffset = openMatch.index + openMatch[0].length;
+      const closeIdx = code.indexOf("</script>", scriptOffset);
+      scriptSrc = closeIdx >= 0 ? code.slice(scriptOffset, closeIdx) : code.slice(scriptOffset);
+    }
+    // If no <script> tag found, scriptSrc stays as `code` (bare-script input, e.g. in tests).
+  }
+
+  const specNodes = collectSpecifierNodes(scriptSrc, scriptOffset);
+
+  // Apply rewrites back-to-front so earlier positions stay valid.
+  let code_out = code;
+  for (const n of [...specNodes].reverse()) {
+    const next = map(n.text);
+    if (next === n.text) continue;
+    const q = code_out[n.start]!;
+    code_out = code_out.slice(0, n.start) + q + next + q + code_out.slice(n.end);
+  }
 
   return {
     code: code_out,
