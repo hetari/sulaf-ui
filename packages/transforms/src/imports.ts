@@ -6,6 +6,8 @@ import { type RegistryItem, rawConfigSchema } from "shadcn-vue/schema";
 import ts from "typescript";
 import { parse as parseSFC } from "vue/compiler-sfc";
 
+import { updateImportAliases } from "./shadcn-import-aliases";
+
 export type RegistryItemType = RegistryItem["type"];
 export type ItemKind = "ui" | "blocks" | "hooks" | "lib";
 
@@ -60,27 +62,17 @@ const INSTALLER_NESTED_KIND_DIR = /\/(ui|components|composables|lib)(?=\/)/;
 /** Item or file segments starting with a kind token trip shadcn-vue's greedy `/ui` match. */
 const INSTALLER_KIND_TOKEN = /^(ui|components|composables|lib)(?=[-./]|$)/;
 /**
- * Intermediate utils specifier for shadcn-vue utils retarget (`@/lib/utils`).
- * Registry `.../lib/utils` is for non-`@` components roots — see `STAGED_UTILS_REGISTRY_SPEC`.
+ * Staged cn specifier rewritten by shadcn-vue `updateImportAliases` + utils retarget.
+ * Uses the registry lib path so `aliases.lib` (default `@/lib`) maps to `@/lib/utils`
+ * even when `aliases.components` uses a different path root (e.g. `~/components`), which
+ * satisfies shadcn-vue@2.8.2 retarget (`updatedImport === "@/lib/utils"`).
+ * For non-default `aliases.lib`, installers still resolve `${aliases.lib}/utils`; cn
+ * must live at that path or use the canonical `@/lib/utils` retarget flow (see tests).
  */
-export const STAGED_UTILS_SPEC = DEFAULT_ALIASES.utils;
-/** When `aliases.components` root is not `@`, install via lib registry prefix (requires `aliases.lib` = `@/lib`). */
-export const STAGED_UTILS_REGISTRY_SPEC = `${STAGED_REGISTRY_PREFIX.lib}/utils`;
-/** Pinned shadcn-vue@2.8.2 default-install remap (avoids import cycle with test helper). */
-const installAliasForStaged = (staged: string): string => {
-  const a = DEFAULT_ALIASES;
-  if (!staged.startsWith("@/registry/")) {
-    return staged.replace(/^@\//, `${a.components.split("/")[0]}/`);
-  }
-  if (staged.match(/^@\/registry\/(.+)\/ui/)) return staged.replace(/^@\/registry\/(.+)\/ui/, a.ui);
-  if (staged.match(/^@\/registry\/(.+)\/components/))
-    return staged.replace(/^@\/registry\/(.+)\/components/, a.components);
-  if (staged.match(/^@\/registry\/(.+)\/lib/))
-    return staged.replace(/^@\/registry\/(.+)\/lib/, a.lib);
-  if (staged.match(/^@\/registry\/(.+)\/composables/))
-    return staged.replace(/^@\/registry\/(.+)\/composables/, a.composables);
-  return staged.replace(/^@\/registry\/[^/]+/, a.components);
-};
+export const STAGED_UTILS_SPEC = `${STAGED_REGISTRY_PREFIX.lib}/utils`;
+/** `@/lib/utils` after install when default aliases are used. */
+export const STAGED_UTILS_CANONICAL_SPEC = DEFAULT_ALIASES.utils;
+export const STAGED_UTILS_REGISTRY_SPEC = STAGED_UTILS_SPEC;
 const REGISTRY_PREFIX = /^@sulaf\/registry\/(ui|blocks|hooks|lib)\/([^/]+)$/;
 const SULAF_UTILS_SPEC = "@sulaf/ui/lib/utils";
 
@@ -165,7 +157,7 @@ export function rewriteImports(
     }
     const staged = `${STAGED_REGISTRY_PREFIX[kind]}/${name}${subpath}`;
     const expected = `${KIND_ALIAS[kind]}/${name}${subpath}`;
-    if (installAliasForStaged(staged) !== expected) {
+    if (updateImportAliases(staged, { aliases: DEFAULT_ALIASES }) !== expected) {
       fail(
         spec,
         "would resolve to an installer-unsafe path under shadcn-vue@2.8.2; avoid kind tokens in item names and file paths (e.g. ui-helper)",

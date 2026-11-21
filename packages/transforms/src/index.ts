@@ -1,4 +1,12 @@
 export * from "./imports";
+export {
+  applyUtilsImportRetarget,
+  installerAliasRootsCompatible,
+  resolveInstallerAliases,
+  updateImportAliases,
+  type InstallerAliases,
+  type InstallerAliasInput,
+} from "./shadcn-import-aliases";
 
 export type {
   ConfigJson,

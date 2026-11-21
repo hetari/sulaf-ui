@@ -23,7 +23,7 @@
     "e2e": "tsx e2e/run.ts",
     "ui:add": "pnpm --filter @sulaf/ui ui:add",
     "ui:sync": "pnpm --filter @sulaf/ui ui:sync",
-    "stage": "pnpm --filter @sulaf/registry run build",
+    "stage": "pnpm --filter @sulaf/transforms run typecheck && pnpm --filter @sulaf/registry run build",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build --filter=sulaf && changeset publish",

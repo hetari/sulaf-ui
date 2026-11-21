@@ -2,11 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_ALIASES,
+  STAGED_UTILS_CANONICAL_SPEC,
   STAGED_UTILS_REGISTRY_SPEC,
   STAGED_UTILS_SPEC,
   rewriteImports,
 } from "./imports";
-import { applyUtilsImportRetarget, updateImportAliases } from "./shadcn-import-aliases";
+import {
+  applyUtilsImportRetarget,
+  installerAliasRootsCompatible,
+  resolveInstallerAliases,
+  updateImportAliases,
+} from "./shadcn-import-aliases";
 
 const file = "src/ui/foo/Foo.vue";
 
@@ -23,20 +29,21 @@ describe("rewriteImports", () => {
   });
   it("maps cn() for installer utils retarget", () => {
     expect(rewriteImports(`import { cn } from "@sulaf/ui/lib/utils"`, { file }).code).toBe(
-      `import { cn } from "@/lib/utils"`,
+      `import { cn } from "@/registry/sulaf/lib/utils"`,
     );
     expect(utilsSpecifierFromRewrite()).toBe(STAGED_UTILS_SPEC);
+    expect(STAGED_UTILS_REGISTRY_SPEC).toBe("@/registry/sulaf/lib/utils");
   });
-  it("stages utils for shadcn-vue aliases.utils retarget via local cn", () => {
+  it("stages utils for shadcn-vue aliases.utils retarget via local cn", async () => {
     expect(
-      applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
+      await applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
         aliases: { ...DEFAULT_ALIASES, utils: "@/helpers/classnames" },
       }),
     ).toBe("@/helpers/classnames");
   });
-  it("retargets utils when aliases.lib is customized", () => {
+  it("retargets utils when aliases.lib is noncanonical with aliases.utils nested beneath it", async () => {
     expect(
-      applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
+      await applyUtilsImportRetarget(STAGED_UTILS_CANONICAL_SPEC, {
         aliases: {
           ...DEFAULT_ALIASES,
           lib: "@/helpers",
@@ -45,10 +52,35 @@ describe("rewriteImports", () => {
       }),
     ).toBe("@/helpers/classnames");
   });
-  it("stages utils so mixed alias roots still retarget on install", () => {
-    expect(STAGED_UTILS_SPEC).toBe("@/lib/utils");
+  it("retains coverage for default aliases retargeting", async () => {
     expect(
-      applyUtilsImportRetarget(STAGED_UTILS_REGISTRY_SPEC, {
+      await applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
+        aliases: DEFAULT_ALIASES,
+      }),
+    ).toBe(DEFAULT_ALIASES.utils);
+  });
+  it("retargets utils when aliases.lib is customized to match a non-default root", async () => {
+    expect(
+      await applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
+        aliases: {
+          ...DEFAULT_ALIASES,
+          components: "~/components",
+          ui: "~/components/ui",
+          lib: "~/lib",
+          utils: "~/helpers/classnames",
+        },
+      }),
+    ).toBe("~/helpers/classnames");
+  });
+  it("retargets utils when components and utils alias roots differ (registry lib staging)", async () => {
+    expect(
+      installerAliasRootsCompatible({
+        components: "~/components",
+        utils: "@/helpers/classnames",
+      }),
+    ).toBe(false);
+    expect(
+      await applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
         aliases: {
           ...DEFAULT_ALIASES,
           components: "~/components",
@@ -57,6 +89,17 @@ describe("rewriteImports", () => {
         },
       }),
     ).toBe("@/helpers/classnames");
+  });
+  it("maps registry lib utils to aliases.lib when lib is customized (no utils retarget)", async () => {
+    expect(
+      await applyUtilsImportRetarget(STAGED_UTILS_REGISTRY_SPEC, {
+        aliases: {
+          ...DEFAULT_ALIASES,
+          lib: "@/helpers",
+          utils: "@/helpers/classnames",
+        },
+      }),
+    ).toBe("@/helpers/utils");
   });
   it.each([
     [`import { cn as cx } from "@sulaf/ui/lib/utils"`],
@@ -80,6 +123,22 @@ describe("rewriteImports", () => {
     expect(updateImportAliases(staged, { aliases: DEFAULT_ALIASES })).toBe(
       `${DEFAULT_ALIASES.ui}/bar`,
     );
+  });
+  it("infers lib and composables aliases when omitted", () => {
+    const partial = { components: "@/components", utils: "@/lib/utils" };
+    expect(resolveInstallerAliases(partial).lib).toBe("@/lib");
+    expect(resolveInstallerAliases(partial).composables).toBe("@/composables");
+    expect(resolveInstallerAliases({ components: "@/ui", utils: "@/lib/utils" }).lib).toBe("@/ui");
+    expect(
+      updateImportAliases("@/registry/sulaf/lib/foo", {
+        aliases: partial,
+      }),
+    ).toBe("@/lib/foo");
+    expect(
+      updateImportAliases("@/registry/sulaf/composables/use-x", {
+        aliases: partial,
+      }),
+    ).toBe("@/composables/use-x");
   });
   it("rejects cross-item imports to files whose path starts with a kind token", () => {
     expect(() => rewriteImports(`import Helper from '../bar/ui-helper'`, { file })).toThrow(
