@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "pathe": "catalog:",
-    "shadcn-vue": "catalog:"
+    "shadcn-vue": "catalog:",
+    "typescript": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:",
     "vitest": "^5.1.0"
   }
 }
