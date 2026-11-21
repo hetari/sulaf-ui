@@ -12,9 +12,11 @@
   "dependencies": {
     "pathe": "catalog:",
     "shadcn-vue": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "vitest": "^5.1.0"
   }
 }
