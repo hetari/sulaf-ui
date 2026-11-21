@@ -55,6 +55,32 @@ const STAGED_REGISTRY_PREFIX: Record<ItemKind, string> = {
   hooks: "@/registry/sulaf/composables",
   lib: "@/registry/sulaf/lib",
 };
+/** Nested kind directory segments (e.g. `/ui/`) are not installer-safe unless on-disk paths match. */
+const INSTALLER_NESTED_KIND_DIR = /\/(ui|components|composables|lib)(?=\/)/;
+/** Item or file segments starting with a kind token trip shadcn-vue's greedy `/ui` match. */
+const INSTALLER_KIND_TOKEN = /^(ui|components|composables|lib)(?=[-./]|$)/;
+/**
+ * Intermediate utils specifier for shadcn-vue utils retarget (`@/lib/utils`).
+ * Registry `.../lib/utils` is for non-`@` components roots — see `STAGED_UTILS_REGISTRY_SPEC`.
+ */
+export const STAGED_UTILS_SPEC = DEFAULT_ALIASES.utils;
+/** When `aliases.components` root is not `@`, install via lib registry prefix (requires `aliases.lib` = `@/lib`). */
+export const STAGED_UTILS_REGISTRY_SPEC = `${STAGED_REGISTRY_PREFIX.lib}/utils`;
+/** Pinned shadcn-vue@2.8.2 default-install remap (avoids import cycle with test helper). */
+const installAliasForStaged = (staged: string): string => {
+  const a = DEFAULT_ALIASES;
+  if (!staged.startsWith("@/registry/")) {
+    return staged.replace(/^@\//, `${a.components.split("/")[0]}/`);
+  }
+  if (staged.match(/^@\/registry\/(.+)\/ui/)) return staged.replace(/^@\/registry\/(.+)\/ui/, a.ui);
+  if (staged.match(/^@\/registry\/(.+)\/components/))
+    return staged.replace(/^@\/registry\/(.+)\/components/, a.components);
+  if (staged.match(/^@\/registry\/(.+)\/lib/))
+    return staged.replace(/^@\/registry\/(.+)\/lib/, a.lib);
+  if (staged.match(/^@\/registry\/(.+)\/composables/))
+    return staged.replace(/^@\/registry\/(.+)\/composables/, a.composables);
+  return staged.replace(/^@\/registry\/[^/]+/, a.components);
+};
 const REGISTRY_PREFIX = /^@sulaf\/registry\/(ui|blocks|hooks|lib)\/([^/]+)$/;
 const SULAF_UTILS_SPEC = "@sulaf/ui/lib/utils";
 
@@ -99,6 +125,9 @@ export function rewriteImports(
     else if (!clause.namedBindings || !ts.isNamedImports(clause.namedBindings))
       fail(spec, 'must use `import { cn } from "@sulaf/ui/lib/utils"`');
     else {
+      if (clause.isTypeOnly)
+        fail(spec, 'must use a value `import { cn } from "@sulaf/ui/lib/utils"`');
+      let hasValueCn = false;
       for (const el of clause.namedBindings.elements) {
         if (el.isTypeOnly) continue;
         const imported = (el.propertyName ?? el.name).text;
@@ -107,7 +136,10 @@ export function rewriteImports(
             spec,
             "must import `cn` with that local name so shadcn-vue can retarget aliases.utils",
           );
+        hasValueCn = true;
       }
+      if (!hasValueCn)
+        fail(spec, "must include a value import of `cn` so shadcn-vue can retarget aliases.utils");
     }
   };
 
@@ -117,6 +149,29 @@ export function rewriteImports(
       spec,
       'must use a static `import { cn } from "@sulaf/ui/lib/utils"`; dynamic import cannot be retargeted by the installer',
     );
+  };
+
+  const stageSiblingImport = (
+    kind: ItemKind,
+    name: string,
+    subpath: string,
+    spec: string,
+  ): string => {
+    if (INSTALLER_KIND_TOKEN.test(name)) {
+      fail(
+        spec,
+        "item names must not start with a kind token (ui, components, composables, lib); rename the item (e.g. ui-card)",
+      );
+    }
+    const staged = `${STAGED_REGISTRY_PREFIX[kind]}/${name}${subpath}`;
+    const expected = `${KIND_ALIAS[kind]}/${name}${subpath}`;
+    if (installAliasForStaged(staged) !== expected) {
+      fail(
+        spec,
+        "would resolve to an installer-unsafe path under shadcn-vue@2.8.2; avoid kind tokens in item names and file paths (e.g. ui-helper)",
+      );
+    }
+    return staged;
   };
 
   const map = (spec: string): string => {
@@ -131,7 +186,7 @@ export function rewriteImports(
       primitives.add(rest);
       return `${STAGED_REGISTRY_PREFIX.ui}/${rest}`;
     }
-    if (spec === SULAF_UTILS_SPEC) return DEFAULT_ALIASES.utils;
+    if (spec === SULAF_UTILS_SPEC) return STAGED_UTILS_SPEC;
     if (spec.startsWith("@sulaf/ui/dev/")) return spec; // removed later by the icon transform (Phase 8)
     if (spec.startsWith("@sulaf/ui/"))
       return fail(spec, "is outside the import contract (see §4.3)");
@@ -145,7 +200,7 @@ export function rewriteImports(
       const kind = m[1] as ItemKind;
       const name = m[2]!;
       siblings.set(`${kind}/${name}`, { kind, name });
-      return `${STAGED_REGISTRY_PREFIX[kind]}/${name}`;
+      return stageSiblingImport(kind, name, "", spec);
     }
 
     // 3. relative imports
@@ -161,7 +216,13 @@ export function rewriteImports(
       const subpath = resolved.slice(
         resolved.indexOf(`/${kind}/${name}`) + `/${kind}/${name}`.length,
       );
-      return `${STAGED_REGISTRY_PREFIX[kind]}/${name}${subpath}`;
+      if (INSTALLER_NESTED_KIND_DIR.test(subpath)) {
+        fail(
+          spec,
+          "cross-item imports into nested kind-named directories (e.g. bar/ui/...) are not supported; import the item entry or a file that does not nest kind folder names",
+        );
+      }
+      return stageSiblingImport(kind, name, subpath, spec);
     }
 
     // 4. app aliases are never allowed in item source

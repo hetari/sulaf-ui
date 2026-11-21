@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { rewriteImports } from "./imports";
+import {
+  DEFAULT_ALIASES,
+  STAGED_UTILS_REGISTRY_SPEC,
+  STAGED_UTILS_SPEC,
+  rewriteImports,
+} from "./imports";
+import { applyUtilsImportRetarget, updateImportAliases } from "./shadcn-import-aliases";
 
 const file = "src/ui/foo/Foo.vue";
+
+const utilsSpecifierFromRewrite = (): string =>
+  rewriteImports(`import { cn } from "@sulaf/ui/lib/utils"`, { file }).code.match(
+    /from "([^"]+)"/,
+  )![1]!;
 
 describe("rewriteImports", () => {
   it("maps a primitive and records it", () => {
@@ -10,23 +21,50 @@ describe("rewriteImports", () => {
     expect(r.code).toBe(`import { Button } from '@/registry/sulaf/ui/button'`);
     expect(r.primitives).toEqual(["button"]);
   });
-  it("maps cn()", () => {
+  it("maps cn() for installer utils retarget", () => {
     expect(rewriteImports(`import { cn } from "@sulaf/ui/lib/utils"`, { file }).code).toBe(
       `import { cn } from "@/lib/utils"`,
     );
+    expect(utilsSpecifierFromRewrite()).toBe(STAGED_UTILS_SPEC);
   });
   it("stages utils for shadcn-vue aliases.utils retarget via local cn", () => {
-    const staged = "@/lib/utils";
-    const aliasesUtils = "@/helpers/classnames";
-    const utilsImport = `${aliasesUtils.split("/")[0]}/lib/utils`;
-    const afterInstaller =
-      staged === "@/lib/utils" || utilsImport === staged ? aliasesUtils : staged;
-    expect(afterInstaller).toBe(aliasesUtils);
+    expect(
+      applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
+        aliases: { ...DEFAULT_ALIASES, utils: "@/helpers/classnames" },
+      }),
+    ).toBe("@/helpers/classnames");
+  });
+  it("retargets utils when aliases.lib is customized", () => {
+    expect(
+      applyUtilsImportRetarget(utilsSpecifierFromRewrite(), {
+        aliases: {
+          ...DEFAULT_ALIASES,
+          lib: "@/helpers",
+          utils: "@/helpers/classnames",
+        },
+      }),
+    ).toBe("@/helpers/classnames");
+  });
+  it("stages utils so mixed alias roots still retarget on install", () => {
+    expect(STAGED_UTILS_SPEC).toBe("@/lib/utils");
+    expect(
+      applyUtilsImportRetarget(STAGED_UTILS_REGISTRY_SPEC, {
+        aliases: {
+          ...DEFAULT_ALIASES,
+          components: "~/components",
+          ui: "~/components/ui",
+          utils: "@/helpers/classnames",
+        },
+      }),
+    ).toBe("@/helpers/classnames");
   });
   it.each([
     [`import { cn as cx } from "@sulaf/ui/lib/utils"`],
     [`import * as utils from "@sulaf/ui/lib/utils"`],
     [`import utils from "@sulaf/ui/lib/utils"`],
+    [`import type { cn } from "@sulaf/ui/lib/utils"`],
+    [`import { type cn } from "@sulaf/ui/lib/utils"`],
+    [`import { Cn } from "@sulaf/ui/lib/utils"`],
     [`const utils = await import("@sulaf/ui/lib/utils")`],
     [`const { cn: cx } = await import("@sulaf/ui/lib/utils")`],
   ])("rejects utils import forms the installer cannot retarget: %s", (line) => {
@@ -39,8 +77,19 @@ describe("rewriteImports", () => {
   });
   it("staged ui sibling paths remap to aliases.ui on install", () => {
     const staged = "@/registry/sulaf/ui/bar";
-    const aliasesUi = "@/widgets";
-    expect(staged.replace(/^@\/registry\/(.+)\/ui/, aliasesUi)).toBe(`${aliasesUi}/bar`);
+    expect(updateImportAliases(staged, { aliases: DEFAULT_ALIASES })).toBe(
+      `${DEFAULT_ALIASES.ui}/bar`,
+    );
+  });
+  it("rejects cross-item imports to files whose path starts with a kind token", () => {
+    expect(() => rewriteImports(`import Helper from '../bar/ui-helper'`, { file })).toThrow(
+      "installer-unsafe",
+    );
+  });
+  it("rejects cross-item imports into nested kind-named directories", () => {
+    expect(() => rewriteImports(`import Child from '../bar/ui/Child.vue'`, { file })).toThrow(
+      "nested kind-named directories",
+    );
   });
   it("keeps imports inside the same item and collects bare packages (never vue)", () => {
     const r = rewriteImports(
