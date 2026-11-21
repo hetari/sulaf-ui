@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+#
+# Sulaf monorepo — CodeRabbit policy (CLI + PR).
+# Local deep review: coderabbit review --deep --base main
+# Re-verify without resetting checkpoint: omit --fresh
+language: en-US
+
+reviews:
+  profile: assertive
+  poem: false
+  in_progress_fortune: false
+  collapse_walkthrough: true
+  review_details: true
+  enable_prompt_for_ai_agents: true
+
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/.nuxt/**"
+    - "!**/.output/**"
+    - "!**/.turbo/**"
+    - "!**/coverage/**"
+    - "!pnpm-lock.yaml"
+    - "!packages/ui/src/components/ui/**"
+    - "!packages/ui/src/styles/**"
+    - "!e2e/fixtures/**"
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 8
+    drafts: false
+    base_branches:
+      - main
+    ignore_title_keywords:
+      - wip
+      - draft
+
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        Sulaf is a pnpm workspace + Turborepo (Node >= 22). Packages: @sulaf/ui (shadcn-vue primitives),
+        @sulaf/transforms (import rewriting for registry staging), @sulaf/registry (dist/r JSON), apps/docs (Nuxt 4).
+        Prioritize correctness and integration bugs over style; oxlint/oxfmt/turbo typecheck already enforce style.
+        Do not duplicate findings already implied by oxlint.config.ts. Prefer one consolidated comment per root cause.
+        questions: Ask only when verification needs local execution; cite concrete file paths.
+    - path: "packages/transforms/**"
+      instructions: |
+        rewriteImports maps Sulaf sources to paths shadcn-vue@2.8.2 rewrites on install
+        (@/registry/sulaf/ui, /components, /composables, /lib).
+        transformImport rewrites ImportDeclaration and dynamic import() only—not export-from or import() types.
+        Full specifier builtins (e.g. buffer/index.js) must remain npm dependencies when not isBuiltin(spec).
+    - path: "packages/registry/**"
+      instructions: |
+        scripts/stage.ts runs rewriteImports then shadcn-vue build; outputs packages/registry/dist/{r,.stage}.
+        Turbo task @sulaf/registry#build depends on dist/** outputs at repo root turbo.json.
+    - path: "apps/docs/**"
+      instructions: |
+        Follow apps/docs/README.md: primitives from @sulaf/ui/components/ui/<name> (folder import, never deep files);
+        docs components under ~/components; no @/ or ~/components/ui for primitives.
+    - path: "packages/ui/**"
+      instructions: |
+        packages/ui/src/components/ui is generated (pnpm ui:add). Skip vendored shadcn file churn; review glue and scripts only.
+
+  finishing_touches:
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  tools:
+    ruff:
+      enabled: false
+    pylint:
+      enabled: false
+    luacheck:
+      enabled: false
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "apps/docs/README.md"
+      - "packages/ui/README.md"
+      - "oxlint.config.ts"
+  learnings:
+    scope: local
+  web_search:
+    enabled: true
